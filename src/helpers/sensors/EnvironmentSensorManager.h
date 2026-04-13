@@ -22,6 +22,7 @@ protected:
   bool SHT4X_initialized = false;
   bool BME680_initialized = false;
   bool BMP085_initialized = false;
+  bool VEML7700_initialized = false;
   bool RAK12035_initialized = false;
 
   bool gps_detected = false;

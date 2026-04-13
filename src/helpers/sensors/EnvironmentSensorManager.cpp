@@ -21,6 +21,14 @@ static Adafruit_BME680 BME680(TELEM_WIRE);
 static Adafruit_BMP085 BMP085;
 #endif
 
+#if ENV_INCLUDE_VEML7700
+#ifndef TELEM_VEML7700_ADDRESS
+#define TELEM_VEML7700_ADDRESS 0x10
+#endif
+#include <Adafruit_VEML7700.h>
+static Adafruit_VEML7700 VEML7700 = Adafruit_VEML7700();
+#endif
+
 #if ENV_INCLUDE_AHTX0
 #define TELEM_AHTX_ADDRESS      0x38      // AHT10, AHT20 temperature and humidity sensor I2C address
 #include <Adafruit_AHTX0.h>
@@ -343,6 +351,16 @@ bool EnvironmentSensorManager::begin() {
   }
   #endif
 
+  #if ENV_INCLUDE_VEML7700
+  if (VEML7700.begin(TELEM_WIRE)) {
+    MESH_DEBUG_PRINTLN("Found VEML7700 at address: %02X", TELEM_VEML7700_ADDRESS);
+    VEML7700_initialized = true;
+  } else {
+    VEML7700_initialized = false;
+    MESH_DEBUG_PRINTLN("VEML7700 was not found at I2C address %02X", TELEM_VEML7700_ADDRESS);
+  }
+  #endif
+
   #if ENV_INCLUDE_RAK12035
     RAK12035.setup(*TELEM_WIRE);
   if (RAK12035.begin(TELEM_RAK12035_ADDRESS)) {
@@ -503,6 +521,14 @@ bool EnvironmentSensorManager::querySensors(uint8_t requester_permissions, Cayen
         telemetry.addTemperature(TELEM_CHANNEL_SELF, BMP085.readTemperature());
         telemetry.addBarometricPressure(TELEM_CHANNEL_SELF, BMP085.readPressure() / 100);
         telemetry.addAltitude(TELEM_CHANNEL_SELF, BMP085.readAltitude(TELEM_BMP085_SEALEVELPRESSURE_HPA * 100));
+    }
+    #endif
+
+    #if ENV_INCLUDE_VEML7700
+    if (VEML7700_initialized) {
+      float lux = VEML7700.readLux();
+      telemetry.addLuminosity(next_available_channel, lux);
+      next_available_channel++;
     }
     #endif
 
